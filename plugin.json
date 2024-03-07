@@ -1,0 +1,10 @@
+{
+  "name": "GrabBag",
+  "author": "Jariullah Safi",
+  "flags": ["debug"],
+  "publish": {
+    "tags": ["screenshots"],
+    "description": "A plugin for copying over screenshots to the Pictures folder",
+    "image": "https://github.com/safijari/GrabBag/raw/main/grabbag-screenshot.png"
+  }
+}
