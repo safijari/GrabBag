@@ -10,6 +10,8 @@ import {
     ServerAPI,
     showContextMenu,
     staticClasses,
+    Navigation,
+    QuickAccessTab,
 } from "decky-frontend-lib";
 import { VFC, useState } from "react";
 import { HiOutlineCamera } from "react-icons/hi";
@@ -46,6 +48,11 @@ const Content: VFC<{ serverAPI: ServerAPI }> = ({ serverAPI }) => {
 };
 
 export default definePlugin((serverApi: ServerAPI) => {
+    let ws = new WebSocket("ws://localhost:9371");
+    ws.addEventListener('message', (event: MessageEvent) => {
+        // Navigation.OpenQuickAccessMenu(QuickAccessTab.Decky);
+        Navigation.OpenMainMenu();
+    });
     return {
         title: <div className={staticClasses.Title}>Screentshot Aggregator</div>,
         content: <Content serverAPI={serverApi} />,

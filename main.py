@@ -11,6 +11,7 @@ import shutil
 import time
 import asyncio
 from threading import Thread
+import traceback
 
 import sys
 sys.path.append(os.path.dirname(__file__))
@@ -18,16 +19,13 @@ sys.path.append(os.path.dirname(__file__))
 from py_backend import keyboard
 from py_backend.websocket_server import WebsocketServer
 
-clients = {}
-
-def new_client(client, server):
+def new_client(client, server, clients):
     decky_plugin.logger.info("New client connected and was given id %d" % client['id'])
-    server.send_message()
     clients[client["id"]] = client
     server.send_message_to_all("Hey all, a new client has joined us")
 
 # Called for every client disconnecting
-def client_left(client, server):
+def client_left(client, server, clients):
     cid = client["id"]
     try:
         del clients[cid]
@@ -41,21 +39,25 @@ def message_received(client, server, message):
         message = message[:200]+'..'
     decky_plugin.logger.info("Client(%d) said: %s" % (client['id'], message))
 
-def indicate(server):
-    for client in clients.values():
-        server.send_message(client, "pressed")
+def indicate(server, clients):
+    decky_plugin.logger.info(f"clients: {len(clients)}")
+    try:
+        for client in clients.values():
+            decky_plugin.logger.info("sending")
+            server.send_message(client, "pressed")
+            decky_plugin.logger.info("sent")
+    except Exception:
+        decky_plugin.logger.info(traceback.format_exc)
     decky_plugin.logger.info("happened")
-    with open("/tmp/happened", "w") as ff:
-        ff.write("happened")
 
-def keyboard_listener(server):
-    keyboard.add_hotkey('ctrl+1', lambda: indicate(server))
+def keyboard_listener(server, clients):
+    keyboard.add_hotkey('ctrl+1', lambda: indicate(server, clients))
     decky_plugin.logger.info("keyboard listener online")
     keyboard.wait()
 
-def ws_server(server):
-    server.set_fn_new_client(new_client)
-    server.set_fn_client_left(client_left)
+def ws_server(server, clients):
+    server.set_fn_new_client(lambda x, y: new_client(x, y, clients))
+    server.set_fn_client_left(lambda x, y: client_left(x, y, clients))
     server.set_fn_message_received(message_received)
     decky_plugin.logger.info("ws online as well")
     server.run_forever()
@@ -63,14 +65,15 @@ def ws_server(server):
 class Plugin:
     _thread = None
     _thread_ws = None
+    _clients = {}
     async def _main(self):
         try:
             PORT=9371
             server = WebsocketServer(port = PORT)
-            Plugin._thread = Thread(target=lambda: keyboard_listener(server))
+            Plugin._thread = Thread(target=lambda: keyboard_listener(server, Plugin._clients))
             Plugin._thread.daemon = True
             Plugin._thread.start()
-            Plugin._thread_ws = Thread(target=lambda: ws_server(server))
+            Plugin._thread_ws = Thread(target=lambda: ws_server(server, Plugin._clients))
             Plugin._thread_ws.daemon = True
             Plugin._thread_ws.start()
             decky_plugin.logger.info("Initialized")
