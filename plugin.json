@@ -1,7 +1,7 @@
 {
   "name": "GrabBag",
   "author": "Jariullah Safi",
-  "flags": ["debug"],
+  "flags": ["root"],
   "publish": {
     "tags": ["screenshots"],
     "description": "A plugin for copying over screenshots to the Pictures folder",
